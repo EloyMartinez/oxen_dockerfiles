@@ -1,9 +1,9 @@
 FROM vllm/vllm-openai:v0.7.3
 
-# Install Oxen CLI
-RUN curl -sSL https://github.com/Oxen-AI/Oxen/releases/latest/download/oxen-ubuntu-latest.tar.gz | tar -xz && \
-    mv oxen /usr/local/bin/ && \
-    chmod +x /usr/local/bin/oxen
+RUN wget https://github.com/Oxen-AI/Oxen/releases/download/v0.35.0/oxen-ubuntu-22.04.deb && \
+    dpkg -i oxen-ubuntu-22.04.deb && \
+    rm oxen-ubuntu-22.04.deb
+
 
 # Verify installation
 RUN oxen --version
