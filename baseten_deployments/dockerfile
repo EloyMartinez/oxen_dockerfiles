@@ -1,0 +1,15 @@
+FROM vllm/vllm-openai:v0.7.3
+
+# Install Oxen CLI
+RUN curl -sSL https://github.com/Oxen-AI/Oxen/releases/latest/download/oxen-ubuntu-latest.tar.gz | tar -xz && \
+    mv oxen /usr/local/bin/ && \
+    chmod +x /usr/local/bin/oxen
+
+# Verify installation
+RUN oxen --version
+
+# Set working directory (optional, but good practice)
+WORKDIR /app
+
+# Keep the same entrypoint as the base image
+# (vLLM image should already have the correct entrypoint)

@@ -1,0 +1,80 @@
+# Use an official NVIDIA CUDA development image matching your desired CUDA version
+FROM nvidia/cuda:11.8.0-devel-ubuntu22.04
+
+# Set DEBIAN_FRONTEND to noninteractive to avoid prompts during apt-get install
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install Python 3.11, the general python3-pip, venv for 3.11, build-essential, git
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3.11 \
+        python3-pip \
+        python3.11-venv \
+        build-essential \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Link python3.11 to python and pip3 to pip (force overwrite)
+# Pointing python -> python3.11
+RUN ln -sf /usr/bin/python3.11 /usr/bin/python && \
+    ln -sf /usr/bin/python3.11 /usr/bin/python3 && \
+    # Ensure pip points to the correct version's pip if needed, though using python3.11 -m pip is safer
+    ln -sf /usr/bin/pip3 /usr/bin/pip
+
+# Set working directory
+WORKDIR /app
+
+# --- Specify PyPI Index URL for pip commands ---
+ARG PIP_INDEX_URL=https://pypi.org/simple
+
+# --- Use python3.11 -m pip for all pip operations ---
+# Upgrade pip for python3.11 and clear cache first
+RUN python3.11 -m pip install --no-cache-dir --upgrade pip setuptools wheel -i $PIP_INDEX_URL && \
+    python3.11 -m pip cache purge
+
+# Install known dependencies of oxenai first
+RUN python3.11 -m pip install --no-cache-dir -i $PIP_INDEX_URL "numpy<2.0" \
+    pandas \
+    polars \
+    pyarrow \
+    fsspec \
+    requests \
+    toml \
+    tqdm \
+    python-dateutil \
+    tzdata
+
+# Now try installing oxenai again, isolated
+# Check PyPI for oxenai wheel compatible with cp311
+RUN python3.11 -m pip install --no-cache-dir -i $PIP_INDEX_URL oxenai==0.34.13
+
+# Install the remaining ML dependencies
+# Install the remaining ML dependencies
+RUN python3.11 -m pip install --no-cache-dir -i $PIP_INDEX_URL \
+    "transformers[torch]==4.51.3" \
+    peft==0.15.1 \
+    trl==0.16.1 \
+    accelerate==1.6.0 \
+    deepspeed==0.16.6 \
+    bitsandbytes==0.45.4
+
+# Install PyTorch compatible with CUDA 11.8 for Python 3.11
+# Check https://pytorch.org/get-started/previous-versions/ for the correct command
+# PyTorch 2.1.2 should work with Python 3.11 and CUDA 11.8
+RUN python3.11 -m pip install --no-cache-dir torch==2.1.2+cu118 torchvision==0.16.2+cu118 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu118
+
+# Copy the rest of your project code
+COPY . .
+
+# Make run script executable
+RUN chmod +x ./run.sh
+
+# Optional: Unset DEBIAN_FRONTEND if needed later
+# ENV DEBIAN_FRONTEND=
+
+
+# USE THIS COMMAND 
+# docker buildx build --platform linux/amd64 --no-cache \
+# -t eloyalbmartinez/oxen-finetuner:v1.6 \
+# --push .
+# 
