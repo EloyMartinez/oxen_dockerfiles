@@ -1,9 +1,11 @@
-FROM vllm/vllm-openai:v0.7.3
+FROM vllm/vllm-openai:v0.8.5
 
 RUN wget https://github.com/Oxen-AI/Oxen/releases/download/v0.35.0/oxen-ubuntu-22.04.deb && \
     dpkg -i oxen-ubuntu-22.04.deb && \
     rm oxen-ubuntu-22.04.deb
 
+# Add rsync for reliable file operations
+RUN apt-get update && apt-get install -y rsync && rm -rf /var/lib/apt/lists/*
 
 # Verify installation
 RUN oxen --version
@@ -13,3 +15,6 @@ WORKDIR /app
 
 # Keep the same entrypoint as the base image
 # (vLLM image should already have the correct entrypoint)
+# docker buildx build --platform linux/amd64 --no-cache \
+#     -t eloyalbmartinez/oxen-baseten-custom-deployment:v1.3 \
+#     --push .
